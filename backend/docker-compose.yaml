@@ -1,0 +1,20 @@
+
+services:
+  betterSkulDb:
+    image: mysql:8.0.42
+    container_name: better_skul_sql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: better_skul
+      MYSQL_USER: betterskul
+      MYSQL_PASSWORD: Betterskul123
+    ports:
+      - "3306:3306"
+    volumes:
+      - better_skul_db_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+
+volumes:
+  better_skul_db_data:
