@@ -36,13 +36,11 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <Link to={"/login"}>
-          
-            <Button variant="ghost">Log in</Button>
+              <Button variant="ghost">Log in</Button>
             </Link>
-               <Link to={"/signup"}>
-              
-            <Button>Sign up</Button>
-               </Link>
+            <Link to={"/signup"}>
+              <Button>Sign up</Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -69,7 +67,7 @@ export default function Landing() {
           </div>
           <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-8 md:p-12 aspect-square flex items-center justify-center">
             <img
-              src="/images/hero-students.png" // replace with your hero image
+              src="https://img.freepik.com/premium-photo/three-diverse-students-smiling-against-colorful-background-showcasing-friendship-youth_933024-5872.jpg?uid=R220770419&ga=GA1.1.210048580.1768051796&semt=ais_hybrid&w=740&q=80" // replace with your hero image
               alt="Students collaborating"
               className="rounded-xl shadow-lg object-cover w-full h-full"
             />
@@ -96,28 +94,32 @@ export default function Landing() {
                 title: "Student Management",
                 description:
                   "Easily manage student profiles, enrollments, and track their academic progress",
-                image: "/images/feature-student.png", // add image
+                image:
+                  "https://img.freepik.com/premium-vector/person-analyzing-data-charts-graphs-screens_926667-5631.jpg?uid=R220770419&ga=GA1.1.210048580.1768051796&semt=ais_hybrid&w=740&q=80", // add image
               },
               {
                 icon: Book,
                 title: "Course Creation",
                 description:
                   "Create and organize courses with detailed information and instructor assignments",
-                image: "/images/feature-course.png",
+                image:
+                  "https://img.freepik.com/premium-photo/collaborative-teamwork-illustrated-concept-projects_1103290-4888.jpg?uid=R220770419&ga=GA1.1.210048580.1768051796&semt=ais_hybrid&w=740&q=80",
               },
               {
                 icon: Award,
                 title: "Grade Tracking",
                 description:
                   "Monitor and record student grades with an intuitive grading system",
-                image: "/images/feature-grade.png",
+                image:
+                  "https://img.freepik.com/free-vector/school-students-blackboard-girls-young-woman-holding-huge-pencils-raising-hands-flat-illustration_74855-11037.jpg",
               },
               {
                 icon: Clock,
                 title: "Real-time Updates",
                 description:
                   "Get instant notifications and updates on enrollments and grade changes",
-                image: "/images/feature-update.png",
+                image:
+                  "https://img.freepik.com/free-vector/automatic-backup-abstract-concept-illustration_335657-1834.jpg?t=st=1768052312~exp=1768055912~hmac=1fed7fed0e747b48ad8c5619c24af7ddb24885787f1cfc295ef8ca0be7f46276&w=1480",
               },
             ].map((feature, i) => (
               <div

@@ -2,6 +2,8 @@ require("express-async-errors")
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
 
 const { pool, testDBConnection } = require("./db");
 
@@ -13,12 +15,16 @@ const usersRouter = require("./src/routes/users.router");
 const instructorsRouter = require("./src/routes/instructors.router");
 const coursesRouter = require("./src/routes/courses.router");
 const enrollmentsRouter = require("./src/routes/enrollments.router");
+const { authGuard } = require("./src/middleware/auth.middleware");
+const { corsMiddleware } = require("./src/middleware/cors.middleware");
 
 
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+
+app.use(corsMiddleware);
 
 // Mount routes
 app.get("/api/v1/health", async (req, res) => {
@@ -40,11 +46,11 @@ app.get("/api/v1/health", async (req, res) => {
 
 
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/users", usersRouter);
-app.use("/api/v1/students", studentsRouter);
-app.use("/api/v1/instructors", instructorsRouter);
-app.use("/api/v1/courses", coursesRouter);
-app.use("/api/v1/enrollments", enrollmentsRouter);
+app.use("/api/v1/users", authGuard, usersRouter);
+app.use("/api/v1/students", authGuard, studentsRouter);
+app.use("/api/v1/instructors", authGuard, instructorsRouter);
+app.use("/api/v1/courses", authGuard, coursesRouter);
+app.use("/api/v1/enrollments", authGuard, enrollmentsRouter);
 
 
 app.use(errorMiddleware)

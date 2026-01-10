@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const { JWT_EXPIRES_IN, JWT_SECRET } = require("../constants/base");
 const { pool } = require("../../db");
 const withTransaction = require("../utils/withTransaction");
+const userRepo = require("../repository/user.repository")
 
 const {
   InvalidCredentialsError,
@@ -11,6 +12,8 @@ const {
 
 const { registerSchema, loginSchema } = require("../validators/auth.schema");
 const { validate } = require("../utils/validate");
+const { BadRequestError } = require("../errors/http.error");
+const { sendCookie } = require("../utils/cookie");
 
 exports.register = async (req, res) => {
   const {
@@ -22,6 +25,11 @@ exports.register = async (req, res) => {
     full_name,
     date_of_birth,
   } = validate(registerSchema, req.body);
+
+  const userExists = await userRepo.findByEmail(pool, email)
+  if(userExists) {
+    throw new BadRequestError("Email already exists")
+  }
 
   await withTransaction(async (connection) => {
     const passwordHash = await argon2.hash(password, {
@@ -47,6 +55,12 @@ exports.register = async (req, res) => {
       );
     }
   });
+
+    const token = jwt.sign({ userId, role }, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN,
+    });
+
+    sendCookie(res, token);
 
   res.status(201).json({
     message: "User registered successfully",
@@ -79,6 +93,7 @@ exports.login = async (req, res) => {
   const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   });
-
-  res.json({ token });
+  
+  sendCookie(res, token);
+  res.json();
 };

@@ -1,188 +1,251 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useNavigate } from "@tanstack/react-router";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { api } from "../lib/axios";
 
 export function SignupForm() {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [role, setRole] = useState<"student" | "instructor">("student");
   const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
     confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    fullName: "",
   });
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((p) => ({ ...p, [name]: value }));
+
+    if (fieldErrors[name]) {
+      setFieldErrors((p) => {
+        const next = { ...p };
+        delete next[name];
+        return next;
+      });
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const validateStep = (step: number) => {
+    const errors: Record<string, string> = {};
     setError(null);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Signup failed. Please try again.");
-        return;
+    if (step === 2) {
+      if (role === "student") {
+        if (!formData.firstName.trim())
+          errors.firstName = "First name is required";
+        if (!formData.lastName.trim())
+          errors.lastName = "Last name is required";
+        if (!formData.dateOfBirth)
+          errors.dateOfBirth = "Date of birth is required";
+      } else {
+        if (!formData.fullName.trim())
+          errors.fullName = "Full name is required";
       }
 
-      // Navigate to login page with a message query
-      navigate({
-        to: "/login",
-        search: (prev) => ({
-          ...prev,
-          message: "Account created successfully. Please sign in.",
-        }),
-      });
-    } catch (err) {
-      setError("An error occurred. Please try again.");
-      console.error("[SignupForm] Signup error:", err);
-    } finally {
-      setIsLoading(false);
+      if (!formData.email.trim()) {
+        errors.email = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = "Invalid email address";
+      }
+
+      if (!formData.password) {
+        errors.password = "Password is required";
+      } else if (formData.password.length < 8) {
+        errors.password = "Password must be at least 8 characters";
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = "Passwords do not match";
+        setError("Passwords do not match");
+      }
     }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
+  const registerMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        email: formData.email,
+        password: formData.password,
+        role,
+        ...(role === "student"
+          ? {
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              date_of_birth: formData.dateOfBirth,
+            }
+          : { full_name: formData.fullName }),
+      };
+
+      const { data } = await api.post("/auth/register", payload);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Account created successfully");
+      window.location.href = "/login";
+    },
+    onError: (err: any) => {
+      const message =
+        err?.response?.data?.message || "Signup failed. Try again.";
+      toast.error(message);
+      setError(message);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validateStep(2)) return;
+    registerMutation.mutate();
+  };
+
+  const renderStepIndicator = () => (
+    <div className="flex justify-center mb-8">
+      {[1, 2].map((step) => (
+        <div key={step} className="flex items-center">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
+              step <= currentStep
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {step < currentStep ? <Check className="w-5 h-5" /> : step}
+          </div>
+          {step < 2 && <div className="w-16 h-1 bg-muted mx-3" />}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-foreground mb-2"
-        >
-          Full name
-        </label>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          placeholder="John Doe"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
+      {renderStepIndicator()}
 
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-foreground mb-2"
+      {currentStep === 1 && (
+        <RadioGroup
+          value={role}
+          onValueChange={(v) => setRole(v as any)}
+          className="grid gap-4"
         >
-          Email
-        </label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-        />
-      </div>
+          {["student", "instructor"].map((value) => (
+            <label
+              key={value}
+              htmlFor={value}
+              className={`
+                rounded-xl border p-5 cursor-pointer transition hover:bg-muted
+                ${
+                  role === value
+                    ? "border-primary bg-primary/5"
+                    : "border-border"
+                }
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value={value} id={value} />
+                <div>
+                  <p className="font-medium capitalize">{value}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {value === "student"
+                      ? "Learn and build your career"
+                      : "Teach and mentor students"}
+                  </p>
+                </div>
+              </div>
+            </label>
+          ))}
+        </RadioGroup>
+      )}
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-foreground mb-2"
-        >
-          Password
-        </label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="At least 8 characters"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-        />
-      </div>
+      {currentStep === 2 && (
+        <div className="space-y-4">
+          {role === "student" ? (
+            <>
+              <Input
+                name="firstName"
+                placeholder="First name"
+                onChange={handleChange}
+              />
+              <Input
+                name="lastName"
+                placeholder="Last name"
+                onChange={handleChange}
+              />
+              <Input name="dateOfBirth" type="date" onChange={handleChange} />
+            </>
+          ) : (
+            <Input
+              name="fullName"
+              placeholder="Full name"
+              onChange={handleChange}
+            />
+          )}
 
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-foreground mb-2"
-        >
-          Confirm password
-        </label>
-        <Input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          placeholder="Confirm your password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-        />
-      </div>
-
-      {error && (
-        <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-          {error}
+          <Input name="email" placeholder="Email" onChange={handleChange} />
+          <Input
+            name="password"
+            type="password"
+            placeholder="Password"
+            onChange={handleChange}
+          />
+          <Input
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm password"
+            onChange={handleChange}
+          />
         </div>
       )}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Creating account..." : "Sign up"}
-      </Button>
+      <div className="flex gap-3 mt-6">
+        {currentStep === 2 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setCurrentStep(1)}
+            className="flex-1"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        )}
 
-      <p className="text-xs text-muted-foreground text-center">
-        By signing up, you agree to our{" "}
-        <button
-          type="button"
-          className="text-primary hover:underline"
-          onClick={() => navigate({ to: "/terms" })}
-        >
-          Terms of Service
-        </button>{" "}
-        and{" "}
-        <button
-          type="button"
-          className="text-primary hover:underline"
-          onClick={() => navigate({ to: "/privacy" })}
-        >
-          Privacy Policy
-        </button>
-      </p>
+        {currentStep === 1 ? (
+          <Button
+            type="button"
+            onClick={() => setCurrentStep(2)}
+            className="flex-1"
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={registerMutation.isPending}
+          >
+            {registerMutation.isPending
+              ? "Creating account..."
+              : "Create Account"}
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

@@ -5,11 +5,13 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useNavigate } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { api } from "../lib/axios";
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -17,41 +19,33 @@ export function LoginForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+  const loginMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
       });
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Signed in successfully");
+      navigate({ to: "/home" });
+    },
+    onError: (err: any) => {
+      console.log(err)
+      const message =
+        err?.response?.data?.message ||
+        "Login failed. Please check your credentials.";
+      toast.error(message);
+    },
+  });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Login failed. Please try again.");
-        return;
-      }
-
-      // Navigate to dashboard using TanStack Router
-      navigate({ to: "/dashboard" });
-    } catch (err) {
-      setError("An error occurred. Please try again.");
-      console.error("[LoginForm] Login error:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    loginMutation.mutate();
   };
 
   return (
@@ -71,26 +65,17 @@ export function LoginForm() {
           value={formData.email}
           onChange={handleChange}
           required
-          disabled={isLoading}
+          disabled={loginMutation.isPending}
         />
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-foreground"
-          >
-            Password
-          </label>
-          <button
-            type="button"
-            className="text-xs text-primary hover:underline"
-            onClick={() => navigate({ to: "/forgot-password" })}
-          >
-            Forgot password?
-          </button>
-        </div>
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-foreground mb-2"
+        >
+          Password
+        </label>
         <Input
           id="password"
           name="password"
@@ -99,18 +84,16 @@ export function LoginForm() {
           value={formData.password}
           onChange={handleChange}
           required
-          disabled={isLoading}
+          disabled={loginMutation.isPending}
         />
       </div>
 
-      {error && (
-        <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
-          {error}
-        </div>
-      )}
-
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign in"}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={loginMutation.isPending}
+      >
+        {loginMutation.isPending ? "Signing in..." : "Sign in"}
       </Button>
     </form>
   );
