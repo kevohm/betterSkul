@@ -13,7 +13,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProtectedHomeRouteImport } from './routes/_protected/home'
+import { Route as ProtectedHomeRouteImport } from './routes/_protected/_home'
+import { Route as ProtectedHomeHomeIndexRouteImport } from './routes/_protected/_home/home/index'
+import { Route as ProtectedHomeHomeSettingsRouteImport } from './routes/_protected/_home/home/settings'
+import { Route as ProtectedHomeHomeCoursesRouteImport } from './routes/_protected/_home/home/courses'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -35,22 +38,42 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedHomeRoute = ProtectedHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+  id: '/_home',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedHomeHomeIndexRoute = ProtectedHomeHomeIndexRouteImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => ProtectedHomeRoute,
+} as any)
+const ProtectedHomeHomeSettingsRoute =
+  ProtectedHomeHomeSettingsRouteImport.update({
+    id: '/home/settings',
+    path: '/home/settings',
+    getParentRoute: () => ProtectedHomeRoute,
+  } as any)
+const ProtectedHomeHomeCoursesRoute =
+  ProtectedHomeHomeCoursesRouteImport.update({
+    id: '/home/courses',
+    path: '/home/courses',
+    getParentRoute: () => ProtectedHomeRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/home': typeof ProtectedHomeRoute
+  '/home/courses': typeof ProtectedHomeHomeCoursesRoute
+  '/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/home': typeof ProtectedHomeHomeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/home': typeof ProtectedHomeRoute
+  '/home/courses': typeof ProtectedHomeHomeCoursesRoute
+  '/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/home': typeof ProtectedHomeHomeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,20 +81,32 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/_protected/home': typeof ProtectedHomeRoute
+  '/_protected/_home': typeof ProtectedHomeRouteWithChildren
+  '/_protected/_home/home/courses': typeof ProtectedHomeHomeCoursesRoute
+  '/_protected/_home/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/_protected/_home/home/': typeof ProtectedHomeHomeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/home'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/home/courses'
+    | '/home/settings'
+    | '/home'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/home'
+  to: '/' | '/login' | '/signup' | '/home/courses' | '/home/settings' | '/home'
   id:
     | '__root__'
     | '/'
     | '/_protected'
     | '/login'
     | '/signup'
-    | '/_protected/home'
+    | '/_protected/_home'
+    | '/_protected/_home/home/courses'
+    | '/_protected/_home/home/settings'
+    | '/_protected/_home/home/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -111,22 +146,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/home': {
-      id: '/_protected/home'
-      path: '/home'
-      fullPath: '/home'
+    '/_protected/_home': {
+      id: '/_protected/_home'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof ProtectedHomeRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/_home/home/': {
+      id: '/_protected/_home/home/'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof ProtectedHomeHomeIndexRouteImport
+      parentRoute: typeof ProtectedHomeRoute
+    }
+    '/_protected/_home/home/settings': {
+      id: '/_protected/_home/home/settings'
+      path: '/home/settings'
+      fullPath: '/home/settings'
+      preLoaderRoute: typeof ProtectedHomeHomeSettingsRouteImport
+      parentRoute: typeof ProtectedHomeRoute
+    }
+    '/_protected/_home/home/courses': {
+      id: '/_protected/_home/home/courses'
+      path: '/home/courses'
+      fullPath: '/home/courses'
+      preLoaderRoute: typeof ProtectedHomeHomeCoursesRouteImport
+      parentRoute: typeof ProtectedHomeRoute
     }
   }
 }
 
+interface ProtectedHomeRouteChildren {
+  ProtectedHomeHomeCoursesRoute: typeof ProtectedHomeHomeCoursesRoute
+  ProtectedHomeHomeSettingsRoute: typeof ProtectedHomeHomeSettingsRoute
+  ProtectedHomeHomeIndexRoute: typeof ProtectedHomeHomeIndexRoute
+}
+
+const ProtectedHomeRouteChildren: ProtectedHomeRouteChildren = {
+  ProtectedHomeHomeCoursesRoute: ProtectedHomeHomeCoursesRoute,
+  ProtectedHomeHomeSettingsRoute: ProtectedHomeHomeSettingsRoute,
+  ProtectedHomeHomeIndexRoute: ProtectedHomeHomeIndexRoute,
+}
+
+const ProtectedHomeRouteWithChildren = ProtectedHomeRoute._addFileChildren(
+  ProtectedHomeRouteChildren,
+)
+
 interface ProtectedRouteChildren {
-  ProtectedHomeRoute: typeof ProtectedHomeRoute
+  ProtectedHomeRoute: typeof ProtectedHomeRouteWithChildren
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
-  ProtectedHomeRoute: ProtectedHomeRoute,
+  ProtectedHomeRoute: ProtectedHomeRouteWithChildren,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(

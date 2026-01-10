@@ -12,7 +12,7 @@ const RootLayout = () => (
       <Toaster/>
       <Outlet />
     </QueryClientProvider>
-    <TanStackRouterDevtools />
+    {/* <TanStackRouterDevtools /> */}
   </>
 );
 
