@@ -4,12 +4,12 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { BookOpen, Award, Clock } from "lucide-react";
+import useAuth from "../../hooks/useAuth";
+import { useMe } from "../../features/auth/hooks";
 
 export default function Home() {
-  const student = {
-    name: "John Doe",
-    email: "john@example.com",
-  };
+  const {data,isLoading} = useMe()
+
 
   const enrollments = [
     {
@@ -53,6 +53,11 @@ export default function Home() {
     if (grade.startsWith("C")) return "bg-yellow-100 text-yellow-700";
     return "bg-red-100 text-red-700";
   };
+  if(isLoading) return <div>Loading...</div>
+    const student = {
+      name: data?.full_name,
+      email: "john@example.com",
+    };
 
   return (
     <div className="p-8">

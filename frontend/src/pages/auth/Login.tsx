@@ -12,7 +12,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       {/* Header Logo */}
-      <Link href="/" className="mb-12 flex items-center gap-2">
+      <Link to="/" className="mb-12 flex items-center gap-2">
         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
           <Book className="w-5 h-5 text-white" />
         </div>
@@ -36,7 +36,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground">
             Don't have an account?{" "}
             <Link
-              href="/signup"
+              to="/signup"
               className="text-primary hover:underline font-medium"
             >
               Sign up

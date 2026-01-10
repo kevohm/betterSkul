@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const { JWT_EXPIRES_IN, JWT_SECRET } = require("../constants/base");
 const { pool } = require("../../db");
 const withTransaction = require("../utils/withTransaction");
-const userRepo = require("../repository/user.repository")
+const userRepo = require("../repository/user.repository");
 
 const {
   InvalidCredentialsError,
@@ -13,7 +13,7 @@ const {
 const { registerSchema, loginSchema } = require("../validators/auth.schema");
 const { validate } = require("../utils/validate");
 const { BadRequestError } = require("../errors/http.error");
-const { sendCookie } = require("../utils/cookie");
+const { sendCookie, cookieName, removeCookie } = require("../utils/cookie");
 
 exports.register = async (req, res) => {
   const {
@@ -26,9 +26,9 @@ exports.register = async (req, res) => {
     date_of_birth,
   } = validate(registerSchema, req.body);
 
-  const userExists = await userRepo.findByEmail(pool, email)
-  if(userExists) {
-    throw new BadRequestError("Email already exists")
+  const userExists = await userRepo.findByEmail(pool, email);
+  if (userExists) {
+    throw new BadRequestError("Email already exists");
   }
 
   await withTransaction(async (connection) => {
@@ -56,11 +56,19 @@ exports.register = async (req, res) => {
     }
   });
 
-    const token = jwt.sign({ userId, role }, JWT_SECRET, {
+  const token = jwt.sign(
+    {
+      userId,
+      role,
+      full_name: user.full_name || `${user.first_name} ${user?.last_name}`,
+    },
+    JWT_SECRET,
+    {
       expiresIn: JWT_EXPIRES_IN,
-    });
+    }
+  );
 
-    sendCookie(res, token);
+  sendCookie(res, token);
 
   res.status(201).json({
     message: "User registered successfully",
@@ -90,10 +98,26 @@ exports.login = async (req, res) => {
     throw new InvalidCredentialsError();
   }
 
-  const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
-  
+  const token = jwt.sign(
+    {
+      userId: user.id,
+      role: user.role,
+      full_name: user?.full_name || `${user.first_name} ${user?.last_name}`,
+    },
+    JWT_SECRET,
+    {
+      expiresIn: JWT_EXPIRES_IN,
+    }
+  );
+
   sendCookie(res, token);
   res.json();
+};
+
+exports.logout = async (req, res) => {
+  removeCookie(res);
+
+  res.status(200).json({
+    message: "Logged out successfully",
+  });
 };

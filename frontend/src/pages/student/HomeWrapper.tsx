@@ -1,9 +1,21 @@
 import { Book, LogOut, Settings, Home as HomeIcon } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useLogout } from "../../features/auth/hooks";
 
 
 const HomeWrapper = () => {
+    const navigate = useNavigate();
+    const logout = useLogout();
+  
+    const handleLogout = async () => {
+      try {
+        await logout.mutateAsync();
+        navigate({ to: "/login" });
+      } catch (err) {
+        console.error("Logout failed", err);
+      }
+    };
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -43,19 +55,18 @@ const HomeWrapper = () => {
           <Button
             variant="outline"
             className="w-full gap-2 bg-transparent"
-            asChild
+            onClick={handleLogout}
+            disabled={logout.isPending}
           >
-            <Link to="/">
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </Link>
+            <LogOut className="w-4 h-4" />
+            {logout.isPending ? "Signing out..." : "Sign out"}
           </Button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <Outlet/>
+        <Outlet />
       </main>
     </div>
   );

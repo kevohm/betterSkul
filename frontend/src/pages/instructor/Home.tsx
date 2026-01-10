@@ -1,12 +1,12 @@
 import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { BookOpen, Users, BarChart3 } from "lucide-react";
+import useAuth from "../../hooks/useAuth";
+import { useMe } from "../../features/auth/hooks";
 
 const Home = () => {
-  const instructor = {
-    name: "Dr. Smith",
-    email: "smith@example.com",
-  };
+  // const  {full_name} = useAuth()
+  const { data, isLoading } = useMe();
 
   const courses = [
     {
@@ -37,6 +37,13 @@ const Home = () => {
     0
   );
   const totalCourses = courses.length;
+  
+  if (isLoading) return <div>Loading..</div>;
+
+  const instructor = {
+    name: data?.full_name,
+    email: "smith@example.com",
+  };
 
   return (
     <div className="p-8">
