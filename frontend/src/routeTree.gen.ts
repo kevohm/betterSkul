@@ -13,8 +13,13 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProtectedMainRouteImport } from './routes/_protected/_main'
 import { Route as ProtectedHomeRouteImport } from './routes/_protected/_home'
+import { Route as ProtectedMainMainIndexRouteImport } from './routes/_protected/_main/main/index'
 import { Route as ProtectedHomeHomeIndexRouteImport } from './routes/_protected/_home/home/index'
+import { Route as ProtectedMainMainStudentsRouteImport } from './routes/_protected/_main/main/students'
+import { Route as ProtectedMainMainSettingsRouteImport } from './routes/_protected/_main/main/settings'
+import { Route as ProtectedMainMainCoursesRouteImport } from './routes/_protected/_main/main/courses'
 import { Route as ProtectedHomeHomeSettingsRouteImport } from './routes/_protected/_home/home/settings'
 import { Route as ProtectedHomeHomeCoursesRouteImport } from './routes/_protected/_home/home/courses'
 
@@ -37,15 +42,42 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedMainRoute = ProtectedMainRouteImport.update({
+  id: '/_main',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedHomeRoute = ProtectedHomeRouteImport.update({
   id: '/_home',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMainMainIndexRoute = ProtectedMainMainIndexRouteImport.update({
+  id: '/main/',
+  path: '/main/',
+  getParentRoute: () => ProtectedMainRoute,
 } as any)
 const ProtectedHomeHomeIndexRoute = ProtectedHomeHomeIndexRouteImport.update({
   id: '/home/',
   path: '/home/',
   getParentRoute: () => ProtectedHomeRoute,
 } as any)
+const ProtectedMainMainStudentsRoute =
+  ProtectedMainMainStudentsRouteImport.update({
+    id: '/main/students',
+    path: '/main/students',
+    getParentRoute: () => ProtectedMainRoute,
+  } as any)
+const ProtectedMainMainSettingsRoute =
+  ProtectedMainMainSettingsRouteImport.update({
+    id: '/main/settings',
+    path: '/main/settings',
+    getParentRoute: () => ProtectedMainRoute,
+  } as any)
+const ProtectedMainMainCoursesRoute =
+  ProtectedMainMainCoursesRouteImport.update({
+    id: '/main/courses',
+    path: '/main/courses',
+    getParentRoute: () => ProtectedMainRoute,
+  } as any)
 const ProtectedHomeHomeSettingsRoute =
   ProtectedHomeHomeSettingsRouteImport.update({
     id: '/home/settings',
@@ -65,7 +97,11 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/home/courses': typeof ProtectedHomeHomeCoursesRoute
   '/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/main/courses': typeof ProtectedMainMainCoursesRoute
+  '/main/settings': typeof ProtectedMainMainSettingsRoute
+  '/main/students': typeof ProtectedMainMainStudentsRoute
   '/home': typeof ProtectedHomeHomeIndexRoute
+  '/main': typeof ProtectedMainMainIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,7 +109,11 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/home/courses': typeof ProtectedHomeHomeCoursesRoute
   '/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/main/courses': typeof ProtectedMainMainCoursesRoute
+  '/main/settings': typeof ProtectedMainMainSettingsRoute
+  '/main/students': typeof ProtectedMainMainStudentsRoute
   '/home': typeof ProtectedHomeHomeIndexRoute
+  '/main': typeof ProtectedMainMainIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,9 +122,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/_protected/_home': typeof ProtectedHomeRouteWithChildren
+  '/_protected/_main': typeof ProtectedMainRouteWithChildren
   '/_protected/_home/home/courses': typeof ProtectedHomeHomeCoursesRoute
   '/_protected/_home/home/settings': typeof ProtectedHomeHomeSettingsRoute
+  '/_protected/_main/main/courses': typeof ProtectedMainMainCoursesRoute
+  '/_protected/_main/main/settings': typeof ProtectedMainMainSettingsRoute
+  '/_protected/_main/main/students': typeof ProtectedMainMainStudentsRoute
   '/_protected/_home/home/': typeof ProtectedHomeHomeIndexRoute
+  '/_protected/_main/main/': typeof ProtectedMainMainIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -94,9 +139,23 @@ export interface FileRouteTypes {
     | '/signup'
     | '/home/courses'
     | '/home/settings'
+    | '/main/courses'
+    | '/main/settings'
+    | '/main/students'
     | '/home'
+    | '/main'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/home/courses' | '/home/settings' | '/home'
+  to:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/home/courses'
+    | '/home/settings'
+    | '/main/courses'
+    | '/main/settings'
+    | '/main/students'
+    | '/home'
+    | '/main'
   id:
     | '__root__'
     | '/'
@@ -104,9 +163,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/_protected/_home'
+    | '/_protected/_main'
     | '/_protected/_home/home/courses'
     | '/_protected/_home/home/settings'
+    | '/_protected/_main/main/courses'
+    | '/_protected/_main/main/settings'
+    | '/_protected/_main/main/students'
     | '/_protected/_home/home/'
+    | '/_protected/_main/main/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -146,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/_main': {
+      id: '/_protected/_main'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedMainRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/_home': {
       id: '/_protected/_home'
       path: ''
@@ -153,12 +224,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHomeRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/_main/main/': {
+      id: '/_protected/_main/main/'
+      path: '/main'
+      fullPath: '/main'
+      preLoaderRoute: typeof ProtectedMainMainIndexRouteImport
+      parentRoute: typeof ProtectedMainRoute
+    }
     '/_protected/_home/home/': {
       id: '/_protected/_home/home/'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof ProtectedHomeHomeIndexRouteImport
       parentRoute: typeof ProtectedHomeRoute
+    }
+    '/_protected/_main/main/students': {
+      id: '/_protected/_main/main/students'
+      path: '/main/students'
+      fullPath: '/main/students'
+      preLoaderRoute: typeof ProtectedMainMainStudentsRouteImport
+      parentRoute: typeof ProtectedMainRoute
+    }
+    '/_protected/_main/main/settings': {
+      id: '/_protected/_main/main/settings'
+      path: '/main/settings'
+      fullPath: '/main/settings'
+      preLoaderRoute: typeof ProtectedMainMainSettingsRouteImport
+      parentRoute: typeof ProtectedMainRoute
+    }
+    '/_protected/_main/main/courses': {
+      id: '/_protected/_main/main/courses'
+      path: '/main/courses'
+      fullPath: '/main/courses'
+      preLoaderRoute: typeof ProtectedMainMainCoursesRouteImport
+      parentRoute: typeof ProtectedMainRoute
     }
     '/_protected/_home/home/settings': {
       id: '/_protected/_home/home/settings'
@@ -193,12 +292,32 @@ const ProtectedHomeRouteWithChildren = ProtectedHomeRoute._addFileChildren(
   ProtectedHomeRouteChildren,
 )
 
+interface ProtectedMainRouteChildren {
+  ProtectedMainMainCoursesRoute: typeof ProtectedMainMainCoursesRoute
+  ProtectedMainMainSettingsRoute: typeof ProtectedMainMainSettingsRoute
+  ProtectedMainMainStudentsRoute: typeof ProtectedMainMainStudentsRoute
+  ProtectedMainMainIndexRoute: typeof ProtectedMainMainIndexRoute
+}
+
+const ProtectedMainRouteChildren: ProtectedMainRouteChildren = {
+  ProtectedMainMainCoursesRoute: ProtectedMainMainCoursesRoute,
+  ProtectedMainMainSettingsRoute: ProtectedMainMainSettingsRoute,
+  ProtectedMainMainStudentsRoute: ProtectedMainMainStudentsRoute,
+  ProtectedMainMainIndexRoute: ProtectedMainMainIndexRoute,
+}
+
+const ProtectedMainRouteWithChildren = ProtectedMainRoute._addFileChildren(
+  ProtectedMainRouteChildren,
+)
+
 interface ProtectedRouteChildren {
   ProtectedHomeRoute: typeof ProtectedHomeRouteWithChildren
+  ProtectedMainRoute: typeof ProtectedMainRouteWithChildren
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedHomeRoute: ProtectedHomeRouteWithChildren,
+  ProtectedMainRoute: ProtectedMainRouteWithChildren,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
