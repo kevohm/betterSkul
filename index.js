@@ -17,7 +17,9 @@ app.use(express.json());
 app.use(
   cors({
     origin:
-      process.env.NODE_ENV === "production" ? ["https://yourdomain.com"] : "*",
+      process.env.NODE_ENV === "production"
+        ? ["https://better-skul.vercel.app"]
+        : "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
