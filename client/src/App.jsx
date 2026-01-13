@@ -1,221 +1,339 @@
-import { useState } from "react";
-import {
-  Play,
-  Database,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
-const url = import.meta.env.VITE_BASE_URL || "http://localhost:4000";
+const url = import.meta.env.VITE_BASE_URL || "http://localhost:4000/api";
+
+const SQL_KEYWORDS = [
+  "SELECT",
+  "INSERT",
+  "UPDATE",
+  "DELETE",
+  "FROM",
+  "WHERE",
+  "JOIN",
+  "LEFT JOIN",
+  "RIGHT JOIN",
+  "INNER JOIN",
+  "VALUES",
+  "SET",
+  "CREATE TABLE",
+  "DROP TABLE",
+  "ALTER TABLE",
+  "ORDER BY",
+  "GROUP BY",
+  "LIMIT",
+  "STATUS",
+];
 
 export default function App() {
   const [sql, setSql] = useState("");
-  const [result, setResult] = useState([]);
-  const [error, setError] = useState("");
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [executionTime, setExecutionTime] = useState(null);
+  const [dbStatus, setDbStatus] = useState("unknown"); // connected | down | unknown
 
+  const terminalRef = useRef(null);
+  const commandHistory = useRef([]);
+  const historyIndex = useRef(0);
+
+  useEffect(() => {
+    terminalRef.current?.scrollTo(0, terminalRef.current.scrollHeight);
+  }, [history, loading]);
+
+  /** ---------------- DB STATUS ---------------- */
+  const checkDbStatus = async (silent = false) => {
+    try {
+      const res = await fetch(`${url}/health`);
+      const data = await res.json();
+
+      setDbStatus(data.status === "healthy" ? "connected" : "down");
+
+      if (!silent) {
+        setHistory((h) => [
+          ...h,
+          {
+            type: "system",
+            value: `Database: MySQL | Status: ${data.status} | Time: ${data.timestamp}`,
+          },
+        ]);
+      }
+    } catch {
+      setDbStatus("down");
+      if (!silent) {
+        setHistory((h) => [
+          ...h,
+          { type: "error", value: "Cannot reach database server" },
+        ]);
+      }
+    }
+  };
+
+  // Check DB on startup
+  useEffect(() => {
+    checkDbStatus(true);
+  }, []);
+
+  /** ---------------- RUN QUERY ---------------- */
   const runQuery = async () => {
-    setError("");
+    if (!sql.trim()) return;
+
+    const query = sql.trim();
+
+    // Exit command
+    if (query.toLowerCase() === "exit;" || query.toLowerCase() === "exit") {
+      window.location.href = "/"; // navigate to landing page
+      return;
+    }
+
+    // REPL command: status;
+    if (query.toLowerCase() === "status;" || query.toLowerCase() === "status") {
+      setSql("");
+      commandHistory.current.push(query);
+      historyIndex.current = commandHistory.current.length;
+
+      setHistory((h) => [...h, { type: "query", value: query }]);
+      await checkDbStatus();
+      return;
+    }
+
+    if (dbStatus === "down") {
+      setHistory((h) => [
+        ...h,
+        { type: "query", value: query },
+        { type: "error", value: "Database is not connected" },
+      ]);
+      setSql("");
+      return;
+    }
+
+    setSql("");
     setLoading(true);
-    const startTime = performance.now();
+    commandHistory.current.push(query);
+    historyIndex.current = commandHistory.current.length;
 
     try {
+      const start = performance.now();
       const res = await fetch(`${url}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sql }),
+        body: JSON.stringify({ sql: query }),
       });
       const data = await res.json();
-      const endTime = performance.now();
-      setExecutionTime(((endTime - startTime) / 1000).toFixed(3));
+      const time = ((performance.now() - start) / 1000).toFixed(3);
 
-      if (data.error) {
-        setError(data.error);
-        setResult([]);
+      if (!data.success) {
+        setHistory((h) => [
+          ...h,
+          { type: "query", value: query },
+          { type: "error", value: data.error || "Unknown error" },
+        ]);
+        return;
+      }
+
+      if (data.type === "SELECT") {
+        setHistory((h) => [
+          ...h,
+          { type: "query", value: query },
+          { type: "result", rows: data.rows, time },
+        ]);
       } else {
-        setResult(data.rows);
+        // INSERT / UPDATE / DELETE / DDL
+        setHistory((h) => [
+          ...h,
+          { type: "query", value: query },
+          {
+            type: "system",
+            value: `${data.message} | Affected rows: ${
+              data.affectedRows
+            } | Insert ID: ${data.insertId ?? "-"} | Warnings: ${
+              data.warningCount
+            } | Time: ${time}s`,
+          },
+        ]);
       }
     } catch (err) {
-      setError(err.message);
-      setResult([]);
+      setDbStatus("down");
+      setHistory((h) => [
+        ...h,
+        { type: "query", value: query },
+        { type: "error", value: err.message },
+      ]);
     } finally {
       setLoading(false);
     }
+  };;
+
+  /** ---------------- AUTOCOMPLETE ---------------- */
+  const autoComplete = () => {
+    const parts = sql.split(/\s+/);
+    const last = parts[parts.length - 1].toUpperCase();
+
+    const match = SQL_KEYWORDS.find((k) => k.startsWith(last));
+    if (!match) return;
+
+    parts[parts.length - 1] = match;
+    setSql(parts.join(" ") + " ");
   };
 
+  /** ---------------- KEY HANDLING ---------------- */
   const handleKeyDown = (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    // Enter executes if ends with ;
+    if (e.key === "Enter" && sql.trim().endsWith(";")) {
       e.preventDefault();
       runQuery();
+      return;
+    }
+
+    // Ctrl / Cmd + Enter → force execute
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      runQuery();
+      return;
+    }
+
+    // Ctrl + L → clear
+    if (e.ctrlKey && e.key.toLowerCase() === "l") {
+      e.preventDefault();
+      setHistory([]);
+      return;
+    }
+
+    // Ctrl + C → cancel
+    if (e.ctrlKey && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      setSql("");
+      setHistory((h) => [...h, { type: "system", value: "^C" }]);
+      return;
+    }
+
+    // Arrow Up → previous command
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (historyIndex.current > 0) {
+        historyIndex.current -= 1;
+        setSql(commandHistory.current[historyIndex.current] || "");
+      }
+      return;
+    }
+
+    // Arrow Down → next command
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex.current < commandHistory.current.length - 1) {
+        historyIndex.current += 1;
+        setSql(commandHistory.current[historyIndex.current] || "");
+      } else {
+        historyIndex.current = commandHistory.current.length;
+        setSql("");
+      }
+      return;
+    }
+
+    // Tab → autocomplete
+    if (e.key === "Tab") {
+      e.preventDefault();
+      autoComplete();
     }
   };
 
+  /** ---------------- TABLE RENDER ---------------- */
+  const renderTable = (rows) => {
+    if (!rows.length) return "Empty set";
+
+    const columns = Object.keys(rows[0]);
+    const widths = columns.map((c) =>
+      Math.max(c.length, ...rows.map((r) => String(r[c] ?? "NULL").length))
+    );
+
+    const line = "+" + widths.map((w) => "-".repeat(w + 2)).join("+") + "+";
+
+    const header =
+      "| " + columns.map((c, i) => c.padEnd(widths[i])).join(" | ") + " |";
+
+    const body = rows
+      .map(
+        (r) =>
+          "| " +
+          columns
+            .map((c, i) => String(r[c] ?? "NULL").padEnd(widths[i]))
+            .join(" | ") +
+          " |"
+      )
+      .join("\n");
+
+    return `${line}
+${header}
+${line}
+${body}
+${line}`;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="h-screen bg-black text-green-400 font-mono text-sm flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Database className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                SQL Query Interface
-              </h1>
-              <p className="text-sm text-slate-500">
-                Execute queries and view results in real-time
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="px-4 py-3 border-b border-green-800 text-green-500 flex justify-between">
+        <span>MySQL REPL Playground</span>
+        <span
+          className={
+            dbStatus === "connected"
+              ? "text-green-400"
+              : dbStatus === "down"
+              ? "text-red-400"
+              : "text-yellow-400"
+          }
+        >
+          DB: {dbStatus}
+        </span>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Query Editor */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-          <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">
-              Query Editor
-            </h2>
-            <span className="text-xs text-slate-500">
-              Cmd/Ctrl + Enter to execute
-            </span>
-          </div>
-          <div className="p-4">
-            <textarea
-              className="w-full p-4 font-mono text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
-              rows={8}
-              placeholder="SELECT * FROM users WHERE status = 'active';"
-              value={sql}
-              onChange={(e) => setSql(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-          <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex items-center justify-between">
-            <div className="text-xs text-slate-500">
-              {sql.length} characters
-            </div>
-            <button
-              onClick={runQuery}
-              disabled={loading || !sql.trim()}
-              className="flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Executing...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Execute Query
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+      {/* Terminal */}
+      <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+        {history.map((item, i) => {
+          if (item.type === "query") {
+            return (
+              <div key={i}>
+                <span className="text-green-500">mysql&gt; </span>
+                <span className="text-green-300">{item.value}</span>
+              </div>
+            );
+          }
+          if (item.type === "error") {
+            return (
+              <div key={i} className="text-red-400">
+                ERROR: {item.value}
+              </div>
+            );
+          }
+          if (item.type === "system") {
+            return (
+              <div key={i} className="text-green-500">
+                {item.value}
+              </div>
+            );
+          }
+          if (item.type === "result") {
+            return (
+              <pre key={i} className="text-green-200 whitespace-pre-wrap">
+                {renderTable(item.rows)}
+                {"\n"}
+                {item.rows.length} rows in set ({item.time}s)
+              </pre>
+            );
+          }
+        })}
 
-        {/* Status Messages */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-semibold text-red-800 mb-1">
-                Query Error
-              </h3>
-              <p className="text-sm text-red-700 font-mono">{error}</p>
-            </div>
-          </div>
-        )}
+        {loading && <div className="text-green-500">Running query...</div>}
+      </div>
 
-        {!error && result.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-green-800 mb-1">
-                Query Successful
-              </h3>
-              <p className="text-sm text-green-700">
-                {result.length} {result.length === 1 ? "row" : "rows"} returned
-                {executionTime && ` in ${executionTime}s`}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Results Table */}
-        {result.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-700">
-                Query Results
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    {Object.keys(result[0]).map((col) => (
-                      <th
-                        key={col}
-                        className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider"
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {result.map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                      {Object.values(row).map((val, j) => (
-                        <td
-                          key={j}
-                          className="px-4 py-3 text-sm text-slate-900 font-mono"
-                        >
-                          {val === null ? (
-                            <span className="text-slate-400 italic">NULL</span>
-                          ) : (
-                            val
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!error && result.length === 0 && !loading && sql.trim() === "" && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-            <div className="inline-flex p-4 bg-slate-100 rounded-full mb-4">
-              <Database className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              Ready to Execute
-            </h3>
-            <p className="text-slate-500 mb-4">
-              Enter your SQL query above and click Execute to see results
-            </p>
-            <div className="inline-flex items-center gap-2 text-sm text-slate-400">
-              <kbd className="px-2 py-1 bg-slate-100 border border-slate-300 rounded text-xs">
-                Cmd
-              </kbd>
-              <span>+</span>
-              <kbd className="px-2 py-1 bg-slate-100 border border-slate-300 rounded text-xs">
-                Enter
-              </kbd>
-              <span className="ml-1">to execute</span>
-            </div>
-          </div>
-        )}
+      {/* Input */}
+      <div className="border-t border-green-800 px-4 py-6 flex items-start gap-2">
+        <span className="text-green-500">mysql&gt;</span>
+        <textarea
+          value={sql}
+          onChange={(e) => setSql(e.target.value)}
+          onKeyDown={handleKeyDown}
+          rows={2}
+          className="flex-1 bg-black text-green-300 outline-none resize-none"
+          placeholder="SELECT * FROM users;"
+        />
       </div>
     </div>
   );

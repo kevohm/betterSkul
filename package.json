@@ -4,8 +4,15 @@
   "description": "",
   "main": "db.js",
   "scripts": {
-    "start": "node index.js",
-    "start:cli": "node repl.js"
+    "docker:dev": "NODE_ENV=development docker compose up -d --remove-orphans",
+    "docker:dev:reset": "NODE_ENV=development docker compose down -v",
+    "docker:exec": "NODE_ENV=development docker exec -i better_repl_sql mysql -u betterrepl -p better_repl",
+    
+    "dev": "NODE_ENV=development nodemon index.js",
+    "dev:cli": "NODE_ENV=development node repl.js",
+
+    "start": "NODE_ENV=production node index.js",
+    "start:cli": "NODE_ENV=production node repl.js"
   },
   "repository": {
     "type": "git",
@@ -24,5 +31,8 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "mysql2": "^3.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
 }

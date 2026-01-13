@@ -1,0 +1,18 @@
+
+services:
+  betterReplDb:
+    image: mysql:8.0.42
+    container_name: better_repl_sql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: better_repl
+      MYSQL_USER: betterrepl
+      MYSQL_PASSWORD: Betterrepl123
+    ports:
+      - "3306:3306"
+    volumes:
+      - better_repl_db_data:/var/lib/mysql
+
+volumes:
+  better_repl_db_data:

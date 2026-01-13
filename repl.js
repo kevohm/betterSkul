@@ -1,9 +1,11 @@
 const dotenvx = require("@dotenvx/dotenvx")
 
-dotenvx.config({path:".env"})
+dotenvx.config({path:
+  process.env.NODE_ENV === "production" ? ".env" :".env.development"
+})
 
 const readline = require("readline");
-const pool = require("./db");
+const { pool } = require("./db");
 const { highlight } = require("cli-highlight");
 
 // Dangerous SQL keywords to warn about

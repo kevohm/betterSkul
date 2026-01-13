@@ -1,11 +1,51 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <meta name="apple-mobile-web-app-title" content="MySQL REPL" />
+
+    <!-- SEO -->
+    <title>MySQL REPL Playground — Learn SQL the Cool Way</title>
+    <meta
+      name="description"
+      content="An interactive MySQL REPL playground to learn SQL the cool way. Practice CREATE, INSERT, SELECT, UPDATE, DELETE, joins, indexes, and constraints in a live REPL."
+    />
+    <meta
+      name="keywords"
+      content="MySQL REPL, SQL playground, learn SQL, MySQL tutorial, SQL CLI, database learning, SQL practice"
+    />
+    <meta name="author" content="MySQL REPL Playground" />
+
+    <!-- Open Graph (Social Sharing) -->
+    <meta property="og:title" content="MySQL REPL Playground — Learn SQL the Cool Way" />
+    <meta
+      property="og:description"
+      content="Practice SQL interactively with a MySQL-style REPL. Learn databases hands-on with real commands and instant feedback."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://your-domain.com" />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MySQL REPL Playground — Learn SQL the Cool Way" />
+    <meta
+      name="twitter:description"
+      content="A fun, interactive MySQL REPL for learning SQL hands-on."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
