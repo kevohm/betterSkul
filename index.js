@@ -14,16 +14,30 @@ app.use(express.json());
 /* =========================
    CORS
 ========================= */
+
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://better-skul.vercel.app"]
+    : ["http://localhost:5173", "http://127.0.0.1:5173"]; // dev origins
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://better-skul.vercel.app"]
-        : "*",
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"], // add Authorization if using JWT
+    credentials: true, // if you plan to send cookies/auth headers
   })
 );
+
 
 /* =========================
    RATE LIMITING
