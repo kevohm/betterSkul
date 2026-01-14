@@ -316,22 +316,4 @@ Maps MySQL errors to HTTP responses:
 
 ---
 
-## 9. Why This Matters
-
-Better REPL demonstrates:
-
-* Strong backend fundamentals (Express, MySQL, security)
-* Real-world SQL handling
-* REPL UX design (CLI + Web)
-* Clean error handling & observability
-
-Perfect for:
-
-* Interviews
-* Teaching SQL
-* Internal tools
-* Developer platforms
-
----
-
 **Better REPL – SQL, without fear.** 🚀

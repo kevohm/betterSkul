@@ -164,6 +164,37 @@ export default function Landing() {
           </button>
         </div>
       </div>
+      {/* Demo Video Section */}
+      <section className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-14">
+          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+            Watch BetterRepl in Action
+          </h2>
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            See how BetterRepl works — from running SQL queries to viewing
+            results in real time using both the Web and CLI REPL.
+          </p>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
+            <iframe
+              src="https://www.youtube.com/embed/E9WoVDanYNs"
+              title="BetterRepl Demo"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+
+          {/* Optional caption */}
+          <p className="text-center text-slate-500 text-sm mt-6">
+            Demo: Executing SQL queries, viewing results, and handling errors in
+            BetterRepl
+          </p>
+        </div>
+      </section>
 
       {/* Features Section */}
       <section className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-20">
